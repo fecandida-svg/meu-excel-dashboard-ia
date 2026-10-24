@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Financeiro Mensal</title>
+<style>
+:root{--navy:#17365d;--blue:#5b9bd5;--bg:#f4f7fb;--green:#2e7d32;--red:#b3261e}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#222}
+header{background:var(--navy);color:#fff;padding:24px 5%;}header h1{margin:0 0 8px;font-size:clamp(1.4rem,3vw,2rem)}header p{margin:0;opacity:.9}
+main{max-width:1200px;margin:24px auto;padding:0 16px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.card,.panel{background:white;border-radius:14px;padding:18px;box-shadow:0 4px 14px #17365d12}.card h3{margin:0 0 12px;font-size:.9rem;color:#555}.value{font-size:1.6rem;font-weight:bold;color:var(--navy)}
+.panel{margin-top:18px}.panel h2{font-size:1.1rem;margin-top:0}.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+input,select,button{padding:10px;border:1px solid #ccd4df;border-radius:8px;font-size:1rem}button{background:var(--navy);color:white;border:0;cursor:pointer}button.secondary{background:#e7edf5;color:var(--navy)}
+table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:10px;border-bottom:1px solid #e7ebf0;text-align:left}th{background:#eaf1f8} .table-wrap{overflow:auto}
+.chart{display:grid;gap:10px}.barrow{display:grid;grid-template-columns:90px 1fr 110px;gap:10px;align-items:center}.track{height:18px;background:#e8edf3;border-radius:20px;overflow:hidden}.fill{height:100%;background:var(--blue);border-radius:20px}.note{color:#5d6672;font-size:.9rem}
+details{margin:10px 0}footer{text-align:center;padding:22px;color:#697586}
+</style></head><body>
+<header><h1>Dashboard Financeiro Mensal</h1><p>Controle de receitas, despesas, resultado e margem — com dados editáveis no navegador.</p></header>
+<main>
+<section class="cards">
+<div class="card"><h3>Receitas</h3><div class="value" id="receitas">R$ 0,00</div></div>
+<div class="card"><h3>Despesas</h3><div class="value" id="despesas">R$ 0,00</div></div>
+<div class="card"><h3>Resultado</h3><div class="value" id="resultado">R$ 0,00</div></div>
+<div class="card"><h3>Margem</h3><div class="value" id="margem">0%</div></div>
+</section>
+<section class="panel"><h2>Adicionar lançamento</h2>
+<div class="controls">
+<input type="date" id="data" aria-label="Data">
+<input id="descricao" placeholder="Descrição">
+<select id="tipo"><option>Receita</option><option>Despesa</option></select>
+<input id="valor" type="number" min="0" step="0.01" placeholder="Valor (R$)">
+<button onclick="adicionar()">Adicionar</button>
+<button class="secondary" onclick="baixarCSV()">Baixar lançamentos CSV</button>
+</div><p class="note">Os dados são mantidos apenas nesta página enquanto ela estiver aberta. Baixe o CSV para guardar os lançamentos.</p>
+</section>
+<section class="panel"><h2>Lançamentos</h2><div class="table-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="linhas"></tbody></table></div></section>
+<section class="panel"><h2>Resumo por tipo</h2><div class="chart" id="grafico"></div></section>
+<section class="panel"><h2>Perguntas frequentes</h2>
+<details><summary>Como registrar uma receita?</summary><p>Informe a data, a descrição, selecione “Receita”, digite o valor positivo e clique em Adicionar.</p></details>
+<details><summary>Como registrar uma despesa?</summary><p>Informe a data, a descrição, selecione “Despesa”, digite o valor positivo e clique em Adicionar.</p></details>
+<details><summary>Como guardar meus dados?</summary><p>Clique em “Baixar lançamentos CSV” e guarde o arquivo. A planilha Excel disponibilizada separadamente também pode ser usada para controle mensal.</p></details>
+</section>
+</main><footer>Modelo de controle financeiro — substitua os exemplos pelos seus dados.</footer>
+<script>
+let itens=[
+{data:"2026-10-01",descricao:"Venda/serviço (exemplo)",tipo:"Receita",valor:2500},
+{data:"2026-10-03",descricao:"Aluguel (exemplo)",tipo:"Despesa",valor:900},
+{data:"2026-10-05",descricao:"Material de trabalho (exemplo)",tipo:"Despesa",valor:180},
+{data:"2026-10-10",descricao:"Outro recebimento (exemplo)",tipo:"Receita",valor:650}
+];
+const dinheiro=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function render(){let rec=itens.filter(x=>x.tipo==='Receita').reduce((a,x)=>a+x.valor,0),des=itens.filter(x=>x.tipo==='Despesa').reduce((a,x)=>a+x.valor,0),res=rec-des;
+document.getElementById('receitas').textContent=dinheiro(rec);document.getElementById('despesas').textContent=dinheiro(des);document.getElementById('resultado').textContent=dinheiro(res);document.getElementById('margem').textContent=(rec?res/rec*100:0).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
+document.getElementById('linhas').innerHTML=itens.map((x,i)=>`<tr><td>${x.data}</td><td>${esc(x.descricao)}</td><td>${x.tipo}</td><td>${dinheiro(x.valor)}</td><td><button class="secondary" onclick="remover(${i})">Excluir</button></td></tr>`).join('');
+document.getElementById('grafico').innerHTML=[['Receitas',rec],['Despesas',des],['Resultado',Math.max(res,0)]].map(([n,v])=>`<div class="barrow"><strong>${n}</strong><div class="track"><div class="fill" style="width:${Math.min(100,(v/Math.max(rec,des,1))*100)}%"></div></div><span>${dinheiro(v)}</span></div>`).join('')}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function adicionar(){let data=document.getElementById('data').value,descricao=document.getElementById('descricao').value.trim(),tipo=document.getElementById('tipo').value,valor=Number(document.getElementById('valor').value);if(!data||!descricao||!(valor>0)){alert('Preencha data, descrição e um valor maior que zero.');return}itens.push({data,descricao,tipo,valor});document.getElementById('descricao').value='';document.getElementById('valor').value='';render()}
+function remover(i){itens.splice(i,1);render()}
+function baixarCSV(){let rows=[['Data','Descrição','Tipo','Valor (R$)'],...itens.map(x=>[x.data,x.descricao,x.tipo,x.valor])];let csv='\\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='lancamentos_financeiros.csv';a.click();URL.revokeObjectURL(a.href)}
+render();
+</script></body></html>
